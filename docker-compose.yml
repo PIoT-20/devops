@@ -1,0 +1,166 @@
+services:
+  catalog:
+    build: ./catalog
+    ports:
+      - "8085:8080"
+    networks:
+      - project-net
+    environment:
+      - MONGO_DB=${MONGO_DB}
+    volumes:
+      - ./catalog:/app
+
+  influxdb:
+    image: influxdb:2.7
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+      - influxdb_config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${DOCKER_INFLUXDB_INIT_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${DOCKER_INFLUXDB_INIT_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${DOCKER_INFLUXDB_INIT_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${DOCKER_INFLUXDB_INIT_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}
+    networks:
+      - project-net
+
+  broker:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks:
+      - project-net
+
+  history-tracking:
+    build: ./history-tracking-adaptor
+    environment:
+      - BROKER_HOST=broker
+      - BROKER_PORT=1883
+
+      - CATALOG_ADDRESS=http://catalog:8080
+
+      - HISTORY_TRACKING_ADDRESS=http://history-tracking:8080
+
+      - INFLUXDB_URL=http://influxdb:8086
+      - INFLUXDB_TOKEN=${DOCKER_INFLUXDB_INIT_ADMIN_TOKEN}
+      - INFLUXDB_ORG=${DOCKER_INFLUXDB_INIT_ORG}
+      - INFLUXDB_BUCKET=${DOCKER_INFLUXDB_INIT_BUCKET}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./history-tracking-adaptor/src:/app/src
+    depends_on:
+      - influxdb
+      - catalog
+      - broker
+    networks:
+      - project-net
+
+  noise-agent:
+    build: ./sensor-agent
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./sensor-agent/src:/app/src
+    networks:
+      - project-net
+    environment:
+      - CATALOG_ADDRESS=http://catalog:8080
+      - AGENT_ADDRESS=http://noise-agent:8080
+      - AGENT_TYPE=TWANoise
+    depends_on:
+      - catalog
+
+  temperature-agent:
+    build: ./sensor-agent
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./sensor-agent/src:/app/src
+    networks:
+      - project-net
+    environment:
+      - CATALOG_ADDRESS=http://catalog:8080
+      - AGENT_ADDRESS=http://temperature-agent:8080
+      - AGENT_TYPE=WBGT
+    depends_on:
+      - catalog
+
+  air-quality-agent:
+    build: ./sensor-agent
+    ports:
+      - "8083:8080"
+    volumes:
+      - ./sensor-agent/src:/app/src
+    networks:
+      - project-net
+    environment:
+      - CATALOG_ADDRESS=http://catalog:8080
+      - AGENT_ADDRESS=http://air-quality-agent:8080
+      - AGENT_TYPE=NVIRVentilation
+    depends_on:
+      - catalog
+
+  qis:
+    build: ./quality-index-service
+    ports:
+      - "8084:8080"
+    volumes:
+      - ./quality-index-service/src:/app/src
+    networks:
+      - project-net
+    environment:
+      - CATALOG_ADDRESS=http://catalog:8080
+      - QIS_ADDRESS=http://qis:8080
+    depends_on:
+      - catalog
+
+  device-gateway:
+    build: ./device-gateway
+    volumes:
+      - ./device-gateway/src:/app/src
+      - /run/dbus:/run/dbus:ro
+      - /run/dbus/system_bus_socket:/run/dbus/system_bus_socket
+    networks:
+      - project-net
+    environment:
+      - CATALOG_ADDRESS=http://catalog:8080
+      - BROKER_HOST=broker
+      - BROKER_PORT=1883
+      - CONFIGS_DIR=/app/configs/room101live
+    devices:
+      - /dev/bus/usb
+    privileged: true
+    depends_on:
+      - catalog
+      - broker
+      - history-tracking
+
+  web-dashboard:
+    build: web-dashboard
+    ports:
+      - "80:80"
+    networks:
+      - project-net
+    volumes:
+      - ./web-dashboard:/app
+      - /app/node_modules
+    environment:
+      - VITE_CATALOG_URL=http://catalog:8080
+      - VITE_QIS_URL=http://qis:8080
+    depends_on:
+      - catalog
+      - qis
+
+networks:
+  project-net:
+    driver: bridge
+
+volumes:
+  influxdb_data:
+  influxdb_config:

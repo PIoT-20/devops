@@ -1,0 +1,18 @@
+[submodule "quality-index-service"]
+	path = quality-index-service
+	url = git@github.com:PIoT-20/quality-index-service.git
+[submodule "history-tracking-adaptor"]
+	path = history-tracking-adaptor
+	url = git@github.com:PIoT-20/history-tracking-adaptor.git
+[submodule "sensor-agent"]
+	path = sensor-agent
+	url = git@github.com:PIoT-20/sensor-agent.git
+[submodule "device-gateway"]
+	path = device-gateway
+	url = git@github.com:PIoT-20/device-gateway.git
+[submodule "catalog"]
+	path = catalog
+	url = git@github.com:PIoT-20/catalog.git
+[submodule "web-dashboard"]
+	path = web-dashboard
+	url = git@github.com:PIoT-20/web-dashboard.git
