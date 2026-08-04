@@ -116,7 +116,8 @@ services:
       - project-net
     environment:
       - CATALOG_ADDRESS=http://catalog:8080
-      - QIS_ADDRESS=http://qis:8080
+      - QIS_ADDRESS=http://127.0.0.1:8084
+      - IS_DOCKER=true
     depends_on:
       - catalog
 
