@@ -41,6 +41,7 @@ services:
     environment:
       - BROKER_HOST=broker
       - BROKER_PORT=1883
+      - IS_DOCKER=true
 
       - CATALOG_ADDRESS=http://catalog:8080
 
@@ -73,6 +74,7 @@ services:
       - CATALOG_ADDRESS=http://catalog:8080
       - AGENT_ADDRESS=http://noise-agent:8080
       - AGENT_TYPE=TWANoise
+      - IS_DOCKER=true
     depends_on:
       - catalog
 
@@ -88,6 +90,7 @@ services:
       - CATALOG_ADDRESS=http://catalog:8080
       - AGENT_ADDRESS=http://temperature-agent:8080
       - AGENT_TYPE=WBGT
+      - IS_DOCKER=true
     depends_on:
       - catalog
 
@@ -100,6 +103,7 @@ services:
     networks:
       - project-net
     environment:
+      - IS_DOCKER=true
       - CATALOG_ADDRESS=http://catalog:8080
       - AGENT_ADDRESS=http://air-quality-agent:8080
       - AGENT_TYPE=NVIRVentilation
